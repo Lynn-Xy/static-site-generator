@@ -1,8 +1,7 @@
-from textnode import *
+from textnode import TextNode,TextType
+import re
 
 def main():
-    new = TextNode("test data", "normal", None)
-    new.__repr__()
-
+    TextNode("This is some anchor text", TextType.LINK_TEXT, "https://www.boot.dev")
 
 main()
