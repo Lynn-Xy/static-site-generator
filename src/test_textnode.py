@@ -1,6 +1,6 @@
 import unittest
 
-from textnode import TextNode, TextType, textnode_to_htmlnode, split_nodes_delimiter, split_nodes_link, split_nodes_image
+from textnode import TextNode, TextType, textnode_to_htmlnode, split_nodes_delimiter, split_nodes_link, split_nodes_image, text_to_textnode
 
 from functions import extract_markdown_images, extract_markdown_links
 
@@ -37,7 +37,18 @@ class TestTextNode(unittest.TestCase):
     def test_split_images(self):
         node = TextNode("This is text with an ![image](https://i.imgur.com/zjjcJKZ.png) and another ![second image](https://i.imgur.com/3elNhQu.png)", TextType.NORMAL_TEXT)
         new_nodes = split_nodes_image([node])
-        self.assertListEqual([TextNode("This is text with an ", TextType.NORMAL_TEXT), TextNode("image", TextType.IMAGE_TEXT, "https://i.imgur.com/zjjcJKZ.png"), TextNode(" and another ", TextType.NORMAL_TEXT), TextNode("second image", TextType.IMAGE_TEXT, "https://i.imgur.com/3elNhQu.png")], new_nodes)
+        self.assertListEqual([TextNode("This is text with an ", TextType.NORMAL_TEXT), TextNode("image", TextType.IMAGE_TEXT, url="https://i.imgur.com/zjjcJKZ.png"), TextNode(" and another ", TextType.NORMAL_TEXT), TextNode("second image", TextType.IMAGE_TEXT, url="https://i.imgur.com/3elNhQu.png")], new_nodes)
+
+    def test_split_links(self):
+        node = TextNode("This is text with a [link](https://i.imgur.com/zjjcJKZ.png) and another [second link](https://i.imgur.com/3elNhQu.png)", TextType.NORMAL_TEXT)
+        new_nodes = split_nodes_link([node])
+        self.assertListEqual([TextNode("This is text with a ", TextType.NORMAL_TEXT), TextNode("link", TextType.LINK_TEXT, url="https://i.imgur.com/zjjcJKZ.png"), TextNode(" and another ", TextType.NORMAL_TEXT), TextNode("second link", TextType.LINK_TEXT, url="https://i.imgur.com/3elNhQu.png")], new_nodes)
+
+    def test_text_to_textnode(self):
+        input_text = "This is **text** with an _italic_ word and a ```code block``` and an ![obi wan image](https://i.imgur.com/fJRm4Vk.jpeg) and a [link](https://boot.dev)"
+        old_nodes = [TextNode("This is ", TextType.NORMAL_TEXT), TextNode("text", TextType.BOLD_TEXT), TextNode(" with an ", TextType.NORMAL_TEXT), TextNode("italic", TextType.ITALIC_TEXT), TextNode(" word and a ", TextType.NORMAL_TEXT), TextNode("code block", TextType.CODE_TEXT), TextNode(" and an ", TextType.NORMAL_TEXT), TextNode("obi wan image", TextType.IMAGE_TEXT, url="https://i.imgur.com/fJRm4Vk.jpeg"), TextNode(" and a ", TextType.NORMAL_TEXT), TextNode("link", TextType.LINK_TEXT, url="https://boot.dev")]
+        new_nodes = text_to_textnode(input_text)
+        self.assertEqual(old_nodes, new_nodes)
 
 if __name__ == "__main__":
     unittest.main()
