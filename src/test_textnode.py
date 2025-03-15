@@ -2,7 +2,7 @@ import unittest
 
 from textnode import TextNode, TextType, textnode_to_htmlnode, split_nodes_delimiter, split_nodes_link, split_nodes_image, text_to_textnode
 
-from functions import extract_markdown_images, extract_markdown_links
+from functions import extract_markdown_images, extract_markdown_links, markdown_to_blocks, BlockType, block_to_block_type
 
 class TestTextNode(unittest.TestCase):
     test_node1 = TextNode("This is a **test** node", TextType.BOLD_TEXT)
@@ -49,6 +49,53 @@ class TestTextNode(unittest.TestCase):
         old_nodes = [TextNode("This is ", TextType.NORMAL_TEXT), TextNode("text", TextType.BOLD_TEXT), TextNode(" with an ", TextType.NORMAL_TEXT), TextNode("italic", TextType.ITALIC_TEXT), TextNode(" word and a ", TextType.NORMAL_TEXT), TextNode("code block", TextType.CODE_TEXT), TextNode(" and an ", TextType.NORMAL_TEXT), TextNode("obi wan image", TextType.IMAGE_TEXT, url="https://i.imgur.com/fJRm4Vk.jpeg"), TextNode(" and a ", TextType.NORMAL_TEXT), TextNode("link", TextType.LINK_TEXT, url="https://boot.dev")]
         new_nodes = text_to_textnode(input_text)
         self.assertEqual(old_nodes, new_nodes)
+
+    def test_markdown_to_blocks(self):
+        md = """
+        This is **bolded** paragraph
+
+        This is another paragraph with _italic_ text and `code` here\nThis is the same paragraph on a new line
+
+        - This is a list\n- with items
+        """
+        blocks = markdown_to_blocks(md)
+        self.assertEqual(
+        blocks,
+        [
+            "This is **bolded** paragraph",
+            "This is another paragraph with _italic_ text and `code` here\nThis is the same paragraph on a new line",
+            "- This is a list\n- with items"])
+    
+    def test_paragraph(self):
+        block = "This is a simple paragraph."
+        self.assertEqual(block_to_block_type(block), BlockType.PARAGRAPH)
+
+    def test_heading(self):
+        block = "# This is a heading"
+        self.assertEqual(block_to_block_type(block), BlockType.HEADING)
+        block2 = "### Third level heading"
+        self.assertEqual(block_to_block_type(block2), BlockType.HEADING)
+
+    def test_code(self):
+        block = "```\ndef function():\n    return 'code'\n```"
+        self.assertEqual(block_to_block_type(block), BlockType.CODE)
+
+    def test_quote(self):
+        block = ">This is a quote\n>Another line of quote"
+        self.assertEqual(block_to_block_type(block), BlockType.QUOTE)
+
+    def test_unordered_list(self):
+        block = "- First item\n- Second item\n- Third item"
+        self.assertEqual(block_to_block_type(block), BlockType.UNORDERED_LIST)
+
+    def test_ordered_list(self):
+        block = "1. First item\n2. Second item\n3. Third item"
+        self.assertEqual(block_to_block_type(block), BlockType.ORDERED_LIST)
+        block2 = "2. Second item\n3. Third item"
+        self.assertNotEqual(block_to_block_type(block2), BlockType.ORDERED_LIST)
+        block3 = "1. First item\n3. Third item"
+        self.assertNotEqual(block_to_block_type(block3), BlockType.ORDERED_LIST)
+
 
 if __name__ == "__main__":
     unittest.main()
