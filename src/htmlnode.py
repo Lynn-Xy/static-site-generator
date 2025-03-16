@@ -2,11 +2,31 @@ class HTMLNode():
     def __init__(self, tag=None, value=None, children=None, props=None):
         self.tag = tag
         self.value = value
-        self.children = children
+        if children is None:
+            self.children = []
+        elif isinstance(children, list):
+            self.children = children
+        else:
+            self.children = [children]
         self.props = props
 
     def to_html(self):
-        raise NotImplementedError("Nothing added here yet")
+        if self.tag is None:
+            return ""
+        props_html = ""
+        if self.props is not None:
+            for key, value in self.props.items():
+                props_html += f' {key}="{value}"'
+        if self.value is None and not self.children:
+            return f"<{self.tag}{props_html}></{self.tag}>"
+        children_html = ""
+        if self.children:
+            for child in self.children:
+                children_html += child.to_html()
+        if self.value is None:
+            return f"<{self.tag}{props_html}>{children_html}</{self.tag}>"
+        else:
+            return f"<{self.tag}{props_html}>{self.value}{children_html}</{self.tag}>"
 
     def props_to_html(self):
         text = f""
