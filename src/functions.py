@@ -28,7 +28,7 @@ def block_to_block_type(block: str) -> BlockType:
     if re.match(r'^#{1,6} ', block):
         return BlockType.HEADING
 
-    if re.match(r'^```[\s\S]*```$', block):
+    if re.match(r'^```[\s\S]*?```$', block, re.MULTILINE):
         return BlockType.CODE
 
     lines = block.split('\n')
@@ -48,20 +48,60 @@ def block_to_block_type(block: str) -> BlockType:
     return BlockType.PARAGRAPH
 
 def markdown_to_html_node(markdown):
-    from textnode import TextType, TextNode, textnode_to_htmlnode
+    from textnode import TextType, TextNode, textnode_to_htmlnode, text_to_textnode
     blocks = markdown_to_blocks(markdown)
     nodes = []
     for block in blocks:
         block_type = block_to_block_type(block)
-    if block_type == "p":
-        text_node = text_to_text_node(block)
-        html_node = textnode_to_html_node(text_node)
-        nodes.append(HTMLNode(tag="p", children=html_node))
-    elif block_type == "h1" or block_type == "h2" or block_type == "h3" or block_type == "h4" or block_type == "h5" or block_type == "h6":
-        content = block.lstrip("#").lstrip()
-        text_node = text_to_text_node(content)
-        html_node = textnode_to_html_node(text_node)
-        nodes.append(HTMLNode(tag=block_type, children=html_node))
-    elif block_type == "code":                                  lines = block.split("\n")
-        code_content = "\n".join(lines[1
-    
+        text_node = text_to_textnode(block)
+        html_children = []
+        parent_node = None
+        parent_tag = ""
+        list_children = []
+        if block_type == "code":
+            html_children = block
+        else:
+            html_children = [textnode_to_htmlnode(node) for node in text_node]
+        html_tag = ""
+        html_value = block.strip()
+        if block_type == "paragraph":
+            html_tag = "p"
+        elif block_type == "heading":
+            if re.match(r'^#{6} ', block):
+                html_tag = "h6"
+            elif re.match(r'^#{5} ', block):
+                html_tag = "h5"
+            elif re.match(r'^#{4} ', block):
+                html_tag = "h4"
+            elif re.match(r'^#{3} ', block):
+                html_tag = "h3"
+            elif re.match(r'^#{2} ', block):
+                html_tag = "h2"
+            elif re.match(r'^#{1} ', block):
+                html_tag = "h1"
+                html_value = block.lstrip('#').lstrip()
+        elif block_type == "code":
+            html_tag = "code"
+            code_child = HTMLNode(tag=html_tag, value=html_value)
+            parent_node = HTMLNode(tag="pre", children=[code_child])
+        elif block_type == "quote":
+            html_tag = "blockquote"
+        elif block_type == "unordered_list":
+            for line in block.split("\n"):
+                if line.strip():
+                    list_children.append(HTMLNode(tag="li", value = line.lstrip("-").strip()))
+            parent_tag = "ul"
+            parent_node = HTMLNode(tag=parent_tag, children=list_children)
+        elif block_type == "ordered_list":
+            parent_tag = "ol"
+            for line in block.split("\n"):
+                if line.strip():
+                    list_children.append(HTMLNode(tag="li", value = line.lstrip("-").strip()))
+                parent_node = HTMLNode(tag=parent_tag, children=list_children)
+        else:
+            raise Exception("invalid block_type")
+        if parent_node is not None:
+            nodes.append(parent_node)
+        else:
+            nodes.append(HTMLNode(tag=html_tag, value=html_value, children=html_children))
+    return HTMLNode(tag="div", children=nodes)
